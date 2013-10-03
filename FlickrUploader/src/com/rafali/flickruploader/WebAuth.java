@@ -1,9 +1,5 @@
 package com.rafali.flickruploader;
 
-import java.net.URL;
-
-import org.slf4j.LoggerFactory;
-
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -18,17 +14,14 @@ import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
-
-import com.google.analytics.tracking.android.EasyTracker;
-import com.googlecode.androidannotations.annotations.AfterViews;
-import com.googlecode.androidannotations.annotations.Background;
-import com.googlecode.androidannotations.annotations.EActivity;
-import com.googlecode.androidannotations.annotations.UiThread;
-import com.googlecode.androidannotations.annotations.ViewById;
+import com.googlecode.androidannotations.annotations.*;
 import com.googlecode.flickrjandroid.auth.Permission;
 import com.googlecode.flickrjandroid.oauth.OAuth;
 import com.googlecode.flickrjandroid.oauth.OAuthInterface;
 import com.googlecode.flickrjandroid.oauth.OAuthToken;
+import org.slf4j.LoggerFactory;
+
+import java.net.URL;
 
 @EActivity(R.layout.webauth)
 public class WebAuth extends Activity {
@@ -44,7 +37,6 @@ public class WebAuth extends Activity {
 		requestWindowFeature(Window.FEATURE_PROGRESS);
 		getActionBar().setDisplayHomeAsUpEnabled(true);
 		super.onCreate(savedInstanceState);
-		Mixpanel.track("Web authentication");
 	}
 
 	@SuppressLint({ "SetJavaScriptEnabled", "NewApi" })
@@ -118,14 +110,11 @@ public class WebAuth extends Activity {
 	@Override
 	protected void onStart() {
 		super.onStart();
-		EasyTracker.getInstance().activityStart(this);
 	}
 
 	@Override
 	protected void onStop() {
-		Mixpanel.flush();
 		super.onStop();
-		EasyTracker.getInstance().activityStop(this);
 	}
 
 	@UiThread
@@ -179,8 +168,6 @@ public class WebAuth extends Activity {
 				Utils.setStringProperty(STR.userId, accessToken.getUser().getId());
 				Utils.setStringProperty(STR.userName, accessToken.getUser().getUsername());
 				Utils.setLongProperty(STR.userDateCreated, System.currentTimeMillis());
-				Mixpanel.reset();
-				Mixpanel.track("Sign in success");
 				FlickrApi.reset();
 				FlickrApi.syncUploadedPhotosMap(true);
 				setResult(RESULT_CODE_AUTH);

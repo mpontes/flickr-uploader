@@ -1,22 +1,7 @@
 package com.rafali.flickruploader;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-import org.slf4j.LoggerFactory;
-
 import android.content.Context;
 import android.net.ConnectivityManager;
-
 import com.google.common.collect.Sets;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.googlecode.flickrjandroid.Flickr;
@@ -31,7 +16,11 @@ import com.googlecode.flickrjandroid.photos.SearchParameters;
 import com.googlecode.flickrjandroid.photosets.Photoset;
 import com.googlecode.flickrjandroid.photosets.Photosets;
 import com.googlecode.flickrjandroid.uploader.UploadMetaData;
-import com.rafali.flickruploader.Utils.CAN_UPLOAD;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.*;
 
 public class FlickrApi {
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FlickrApi.class);
@@ -58,8 +47,8 @@ public class FlickrApi {
 		}
 	}
 
-	private static final String API_SECRET = Utils.getString(R.string.flickr_api_secret);
-	private static final String API_KEY = Utils.getString(R.string.flickr_api_key);
+    private static final String API_SECRET = Utils.getString(R.string.flickr_api_secret);
+    private static final String API_KEY = Utils.getString(R.string.flickr_api_key);
 	private static Flickr flickr = new Flickr(API_KEY, API_SECRET);
 
 	private static OAuth auth;
@@ -355,7 +344,7 @@ public class FlickrApi {
 						photoId = photoList.get(0).getId();
 						uploadedPhotos.put(sha1tag, photoId);
 					} else {
-						if (Utils.canUploadNow() != CAN_UPLOAD.ok)
+						if (Utils.canUploadNow() != Utils.CAN_UPLOAD.ok)
 							break;
 						LOG.debug("uploading : " + uri);
 						File file = new File(uri);
@@ -438,7 +427,6 @@ public class FlickrApi {
 						authentified = false;
 					} else if ("5".equals(fe.getErrorCode())) {
 						addUnsupportedExtension(getExtension(image));
-						Mixpanel.track("UnsupportedFileType", "extension", getExtension(image));
 					}
 				}
 				LOG.error(e.getMessage(), e);

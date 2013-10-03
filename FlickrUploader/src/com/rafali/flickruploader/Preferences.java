@@ -1,14 +1,5 @@
 package com.rafali.flickruploader;
 
-import java.sql.Date;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
-import org.slf4j.LoggerFactory;
-
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
@@ -20,7 +11,6 @@ import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
@@ -31,12 +21,14 @@ import android.text.Html;
 import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.Toast;
-
-import com.google.analytics.tracking.android.EasyTracker;
-import com.google.analytics.tracking.android.Log;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
-import com.rafali.flickruploader.billing.IabHelper;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 public class Preferences extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 
@@ -66,7 +58,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 							.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 								@Override
 								public void onClick(DialogInterface dialog, int which) {
-									Mixpanel.track("Sign out");
 									Editor editor = sp.edit();
 									editor.remove(STR.userId);
 									editor.remove(STR.accessToken);
@@ -103,16 +94,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		privacyPreference.setEntries(entries);
 		privacyPreference.setEntryValues(values);
 
-		findPreference("rate").setOnPreferenceClickListener(new OnPreferenceClickListener() {
-			@Override
-			public boolean onPreferenceClick(Preference preference) {
-				Preferences.this.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.rafali.flickruploader")));
-				Mixpanel.track("Rate");
-				Utils.setBooleanProperty(STR.hasRated, true);
-				return false;
-			}
-		});
-
 		findPreference("notifications").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
@@ -123,78 +104,32 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		findPreference("upload_description").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
-				Mixpanel.track("UploadDescription", "premium", Utils.isPremium());
 				AlertDialog.Builder alert = new AlertDialog.Builder(Preferences.this);
 				alert.setTitle("Upload description");
-				if (Utils.isPremium()) {
-					// Set an EditText view to get user input
-					final EditText input = new EditText(Preferences.this);
-					input.setText(Utils.getUploadDescription());
-					alert.setView(input);
+                // Set an EditText view to get user input
+                final EditText input = new EditText(Preferences.this);
+                input.setText(Utils.getUploadDescription());
+                alert.setView(input);
 
-					alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-						public void onClick(DialogInterface dialog, int whichButton) {
-							String value = input.getText().toString();
-							LOG.debug("value : " + value);
-							Utils.setStringProperty("upload_description", value);
-							render();
-						}
-					});
+                alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        String value = input.getText().toString();
+                        LOG.debug("value : " + value);
+                        Utils.setStringProperty("upload_description", value);
+                        render();
+                    }
+                });
 
-					alert.setNegativeButton("Cancel", null);
-				} else {
-					alert.setMessage("A Premium account is needed to customize this branding feature");
-					alert.setPositiveButton("Get Premium Now", new OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							Mixpanel.track("UploadDescriptionPremium");
-							Utils.startPayment(Preferences.this, new Utils.Callback<Boolean>() {
-								@Override
-								public void onResult(Boolean result) {
-									Mixpanel.track("UploadDescriptionPremiumOk");
-								}
-							});
-						}
-					});
-					alert.setNegativeButton("Later", null);
-				}
+                alert.setNegativeButton("Cancel", null);
 
 				alert.show();
 				return false;
 			}
 		});
 
-		findPreference("pictarine").setOnPreferenceClickListener(new OnPreferenceClickListener() {
-			@Override
-			public boolean onPreferenceClick(Preference preference) {
-				Mixpanel.track("Pictarine");
-				Preferences.this.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.pictarine.android")));
-				return false;
-			}
-		});
-		findPreference("faq").setOnPreferenceClickListener(new OnPreferenceClickListener() {
-			@Override
-			public boolean onPreferenceClick(Preference preference) {
-				Mixpanel.track("FAQ");
-				Preferences.this.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/rafali/flickr-uploader/wiki/FAQ")));
-				return false;
-			}
-		});
-
-		findPreference("feedback").setOnPreferenceClickListener(new OnPreferenceClickListener() {
-			@Override
-			public boolean onPreferenceClick(Preference preference) {
-				Mixpanel.track("Feedback");
-				Utils.showEmailActivity(Preferences.this, "Feedback on Flickr Instant Upload", "Here are some feedback to improve this app:", true);
-				return false;
-			}
-
-		});
-
 		findPreference(AUTOUPLOAD_PHOTOSET).setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
 			@Override
 			public boolean onPreferenceChange(Preference preference, Object newValue) {
-				Log.d("newValue : " + newValue);
 				if ("custom".equals(newValue)) {
 					if (ToolString.isBlank(Utils.getStringProperty(STR.userId))) {
 						Toast.makeText(Preferences.this, "You need to login to select your photoset", Toast.LENGTH_LONG).show();
@@ -222,7 +157,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 											builder.setItems(photosetTitlesArray, new OnClickListener() {
 												@Override
 												public void onClick(DialogInterface dialog, int which) {
-													Log.d("selected : " + photosetIds.get(which) + " - " + photosetTitles.get(which));
 													Utils.setStringProperty(STR.instantCustomAlbumId, photosetIds.get(which));
 													Utils.setStringProperty(STR.instantCustomAlbumTitle, photosetTitles.get(which));
 													Utils.setStringProperty(AUTOUPLOAD_PHOTOSET, "custom");
@@ -274,18 +208,15 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	@Override
 	protected void onStart() {
 		super.onStart();
-		EasyTracker.getInstance().activityStart(this);
 	}
 
 	@Override
 	protected void onStop() {
 		super.onStop();
-		EasyTracker.getInstance().activityStop(this);
 	}
 
 	@Override
 	public void onSharedPreferenceChanged(SharedPreferences sp, String key) {
-		Mixpanel.track("Preference Change", key, sp.getAll().get(key));
 		render();
 	}
 
@@ -322,57 +253,11 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 			login.setTitle("Sign out");
 			login.setSummary(Utils.getStringProperty(STR.userName) + " is currently logged in");
 		}
-		Preference premium = findPreference(STR.premium);
-		if (Utils.isPremium()) {
-			premium.setTitle("You are a Premium user");
-			premium.setSummary("Thank you!");
-		} else {
-			if (Utils.isTrial()) {
-				premium.setTitle("Premium Trial");
-				premium.setSummary("It ends on " + SimpleDateFormat.getDateInstance().format(new Date(Utils.trialUntil())));
-			} else {
-				premium.setTitle("Premium Trial Ended");
-				premium.setSummary("Click here to go Premium");
-				((CheckBoxPreference) findPreference(AUTOUPLOAD)).setChecked(false);
-				((CheckBoxPreference) findPreference(AUTOUPLOAD_VIDEOS)).setChecked(false);
-				OnPreferenceClickListener onPreferenceClickListener = new OnPreferenceClickListener() {
-					@Override
-					public boolean onPreferenceClick(Preference preference) {
-						Utils.showPremiumDialog(Preferences.this, new Utils.Callback<Boolean>() {
-							@Override
-							public void onResult(Boolean result) {
-								render();
-							}
-						});
-						return false;
-					}
-				};
-				findPreference(AUTOUPLOAD).setOnPreferenceClickListener(onPreferenceClickListener);
-				findPreference(AUTOUPLOAD_VIDEOS).setOnPreferenceClickListener(onPreferenceClickListener);
-			}
-			premium.setOnPreferenceClickListener(new OnPreferenceClickListener() {
-				@Override
-				public boolean onPreferenceClick(Preference preference) {
-					Utils.showPremiumDialog(Preferences.this, new Utils.Callback<Boolean>() {
-						@Override
-						public void onResult(Boolean result) {
-							render();
-						}
-					});
-					return false;
-				}
-			});
-		}
 	}
 
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (IabHelper.get(false) != null && IabHelper.get(false).handleActivityResult(requestCode, resultCode, data)) {
-			return;
-		}
 		super.onActivityResult(requestCode, resultCode, data);
 	}
-
-	String currentDonation;
 
 	Handler handler;
 

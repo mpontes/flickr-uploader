@@ -1,15 +1,13 @@
 package com.rafali.flickruploader;
 
+import android.database.ContentObserver;
+import android.os.Handler;
+import com.rafali.flickruploader.Utils.MediaType;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.slf4j.LoggerFactory;
-
-import android.database.ContentObserver;
-import android.os.Handler;
-
-import com.rafali.flickruploader.Utils.MediaType;
 
 public class ImageTableObserver extends ContentObserver {
 
@@ -24,11 +22,6 @@ public class ImageTableObserver extends ContentObserver {
 		try {
 			if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
 				LOG.debug("autoupload disabled");
-				return;
-			}
-			if (!Utils.isPremium() && !Utils.isTrial()) {
-				LOG.debug("no autoupload, trial has ended");
-				Notifications.notifyTrialEnded();
 				return;
 			}
 

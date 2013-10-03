@@ -1,46 +1,11 @@
 package com.rafali.flickruploader;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import org.slf4j.LoggerFactory;
-
-import uk.co.senab.bitmapcache.BitmapLruCache;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.Context;
-import android.content.DialogInterface;
+import android.content.*;
 import android.content.DialogInterface.OnClickListener;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.pm.ResolveInfo;
 import android.database.Cursor;
@@ -51,39 +16,28 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.BatteryManager;
-import android.os.Build;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Video;
 import android.provider.Settings.Secure;
-import android.telephony.TelephonyManager;
 import android.util.TypedValue;
 import android.view.WindowManager;
-
-import com.google.api.client.extensions.android.http.AndroidHttp;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpRequestInitializer;
-import com.google.api.client.json.jackson.JacksonFactory;
-import com.google.api.client.util.DateTime;
 import com.google.common.base.Joiner;
 import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
-import com.rafali.flickruploader.appinstallendpoint.Appinstallendpoint;
-import com.rafali.flickruploader.appinstallendpoint.model.AndroidDevice;
-import com.rafali.flickruploader.appinstallendpoint.model.AppInstall;
-import com.rafali.flickruploader.appinstallendpoint.model.CollectionResponseAppInstall;
-import com.rafali.flickruploader.billing.IabException;
-import com.rafali.flickruploader.billing.IabHelper;
-import com.rafali.flickruploader.billing.IabHelper.OnIabPurchaseFinishedListener;
-import com.rafali.flickruploader.billing.IabResult;
-import com.rafali.flickruploader.billing.Inventory;
-import com.rafali.flickruploader.billing.Purchase;
-import com.rafali.flickruploader.rpcendpoint.Rpcendpoint;
+import org.slf4j.LoggerFactory;
+import uk.co.senab.bitmapcache.BitmapLruCache;
+
+import java.io.*;
+import java.security.MessageDigest;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public final class Utils {
 
@@ -95,7 +49,6 @@ public final class Utils {
 		context.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				Mixpanel.track("Sign in dialog");
 				AlertDialog alertDialog = new AlertDialog.Builder(context).setTitle("Sign into Flickr").setMessage("A Flickr account is required to upload photos.")
 						.setPositiveButton("Sign in now", new DialogInterface.OnClickListener() {
 							@Override
@@ -728,7 +681,6 @@ public final class Utils {
 		} else {
 			syncedFolder.remove(folder.path);
 		}
-		Mixpanel.track("Sync Folder", "name", folder.name, "synced", synced);
 		setStringList("syncedFolder", syncedFolder);
 	}
 
@@ -888,112 +840,6 @@ public final class Utils {
 
 	private static boolean charging = false;
 
-	public static final void sendMail(final String subject, final String bodyHtml) {
-		BackgroundExecutor.execute(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					Rpcendpoint.Builder endpointBuilder = new Rpcendpoint.Builder(AndroidHttp.newCompatibleTransport(), new JacksonFactory(), new HttpRequestInitializer() {
-						public void initialize(HttpRequest httpRequest) {
-						}
-					});
-					Rpcendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
-					String admin = FlickrUploader.getAppContext().getString(R.string.admin_email);
-					endpoint.sendMail(admin, subject, bodyHtml, admin).execute();
-				} catch (Throwable e) {
-					LOG.error(e.getMessage(), e);
-
-				}
-			}
-		});
-	}
-
-	public static AndroidDevice createAndroidDevice() {
-		AndroidDevice androidDevice = new AndroidDevice();
-		androidDevice.setId(getDeviceId());
-		androidDevice.setEmails(getAccountEmails());
-		androidDevice.setLanguage(Locale.getDefault().getLanguage());
-		androidDevice.setAndroidVersion(Build.VERSION.SDK_INT);
-		androidDevice.setAppVersion(Config.FULL_VERSION_NAME);
-		androidDevice.setModelInfo(android.os.Build.MODEL + " - " + android.os.Build.VERSION.RELEASE);
-		return androidDevice;
-	}
-
-	public static List<String> getAccountEmails() {
-		List<String> emails = new ArrayList<String>();
-		for (Account account : getAccountsWithEmail()) {
-			emails.add(account.name);
-		}
-		return emails;
-	}
-
-	public static List<Account> getAccountsWithEmail() {
-		List<Account> accountsEmails = new ArrayList<Account>();
-		AccountManager accountManager = AccountManager.get(FlickrUploader.getAppContext());
-		final Account[] accounts = accountManager.getAccountsByType("com.google");
-		for (Account account : accounts) {
-			if (account.name != null) {
-				String name = account.name.toLowerCase(Locale.ENGLISH).trim();
-				if (name.matches(ToolString.REGEX_EMAIL)) {
-					accountsEmails.add(new Account(name, account.type));
-				}
-			}
-		}
-		return accountsEmails;
-	}
-
-	public static void saveAndroidDevice() {
-		try {
-			Appinstallendpoint.Builder endpointBuilder = new Appinstallendpoint.Builder(AndroidHttp.newCompatibleTransport(), new JacksonFactory(), new HttpRequestInitializer() {
-				public void initialize(HttpRequest httpRequest) {
-				}
-			});
-
-			Appinstallendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
-			AppInstall appInstall = null;
-			try {
-				appInstall = endpoint.getAppInstall(getDeviceId()).execute();
-			} catch (Throwable e) {
-				LOG.warn(e.getMessage(), e);
-			}
-			boolean newInstall = appInstall == null;
-			if (appInstall == null) {
-				appInstall = new AppInstall();
-				appInstall.setDateCreation(new DateTime(new Date()));
-				Utils.sendMail("[FlickrUploader] New install - " + getCountryCode() + " - " + Locale.getDefault().getLanguage() + " - " + Utils.getDeviceId(), Utils.getAccountEmails() + " - "
-						+ android.os.Build.MODEL + " - " + android.os.Build.VERSION.RELEASE + " - " + Config.FULL_VERSION_NAME);
-			}
-			appInstall.setEmails(getAccountEmails());
-			appInstall.setAndroidDevice(createAndroidDevice());
-			appInstall.setDeviceId(getDeviceId());
-			if (newInstall) {
-				endpoint.insertAppInstall(appInstall).execute();
-			} else {
-				endpoint.updateAppInstall(appInstall).execute();
-			}
-		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
-
-		}
-	}
-
-	static String countryCode;
-
-	public static String getCountryCode() {
-		try {
-			if (ToolString.isBlank(countryCode)) {
-				try {
-					TelephonyManager tm = (TelephonyManager) FlickrUploader.getAppContext().getSystemService(Context.TELEPHONY_SERVICE);
-					countryCode = tm.getSimCountryIso();
-				} catch (Throwable e) {
-					LOG.warn(e.getClass().getSimpleName() + " : " + e.getMessage());
-				}
-			}
-
-		} catch (Throwable e) {
-		}
-		return countryCode;
-	}
 
 	public static void setCharging(boolean charging) {
 		Utils.charging = charging;
@@ -1047,26 +893,6 @@ public final class Utils {
 		return result;
 	}
 
-	static void thankYou(final Activity activity) {
-		activity.runOnUiThread(new Runnable() {
-			@Override
-			public void run() {
-				Mixpanel.track("ThankYou");
-				AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-				builder.setMessage("Thank you!\n\nThanks to users like you, I can work on improving the app. If you have any suggestion, feel free to send me an email!\n\nMaxime");
-				builder.setPositiveButton("Reply", new OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						showEmailActivity(activity, "Greetings!", "Hey Maxime,\n", false);
-					}
-				});
-				builder.setNegativeButton("OK", null);
-				// Create the AlertDialog object and return it
-				builder.create().show();
-			}
-		});
-	}
-
 	static boolean showingEmailActivity = false;
 
 	public static void showEmailActivity(final Activity activity, final String subject, final String message, final boolean attachLogs) {
@@ -1097,8 +923,6 @@ public final class Utils {
 									bW.write("device id : " + getDeviceId());
 									bW.newLine();
 									bW.write("date install : " + FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime);
-									bW.newLine();
-									bW.write("premium : " + isPremium());
 									bW.newLine();
 									bW.flush();
 									bW.close();
@@ -1135,259 +959,6 @@ public final class Utils {
 				}
 			});
 		}
-	}
-
-	public static void showCouponInfoDialog(final Activity activity) {
-		Mixpanel.track("CouponInfoShow");
-		setBooleanProperty(STR.couponInfo, true);
-
-		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-		builder.setTitle("Coupons available").setMessage("You can get the Premium for a lower price or even for free if you help advertise it a bit.");
-		builder.setNegativeButton("Later", new OnClickListener() {
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				LOG.debug("coupon for later then");
-				Mixpanel.track("CouponInfoLater");
-			}
-		});
-		builder.setPositiveButton("More info", new OnClickListener() {
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				Mixpanel.track("CouponInfoOk");
-				String url = "https://github.com/rafali/flickr-uploader/wiki/Coupons";
-				Intent i = new Intent(Intent.ACTION_VIEW);
-				i.setData(Uri.parse(url));
-				activity.startActivity(i);
-			}
-		});
-	}
-
-	public static void showPremiumDialog(final Activity activity, final Callback<Boolean> callback) {
-		Mixpanel.track("PremiumShow");
-
-		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-		String message = "Support this open-source app. Get the premium today and enjoy the automatic uploads and the next app improvements for life.";
-		if (!isTrial()) {
-			message += " And no ads.";
-		}
-		builder.setTitle("Premium features").setMessage(message).setNegativeButton("Later", new OnClickListener() {
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				LOG.debug("premium for later then");
-				Mixpanel.track("PremiumLater");
-			}
-		}).setPositiveButton("Get Premium Now", new OnClickListener() {
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				startPayment(activity, callback);
-			}
-		});
-
-		builder.create().show();
-	}
-
-	public static void startPayment(final Activity activity, final Callback<Boolean> callback) {
-		final OnIabPurchaseFinishedListener mPurchaseFinishedListener = new OnIabPurchaseFinishedListener() {
-			@Override
-			public void onIabPurchaseFinished(IabResult result, Purchase purchase) {
-				try {
-					LOG.debug("result : " + result + ", purchase:" + purchase);
-					if (result.isFailure()) {
-						if (result.getResponse() == IabHelper.IABHELPER_USER_CANCELLED) {
-							Mixpanel.track("PremiumCancelPayment");
-							showCouponInfoDialog(activity);
-						} else {
-							Mixpanel.track("PremiumError", "type", result.getResponse());
-						}
-						callback.onResult(false);
-						return;
-					}
-					setPremium(true);
-					callback.onResult(true);
-					Mixpanel.track("PremiumSuccess");
-					thankYou(activity);
-
-					long firstInstallTime = FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime;
-					long timeSinceInstall = System.currentTimeMillis() - firstInstallTime;
-
-					Utils.sendMail("[FlickrUploader] PremiumSuccess " + ToolString.formatDuration(timeSinceInstall) + " - " + getCountryCode(), Utils.getDeviceId() + " - " + Utils.getEmail() + " - "
-							+ Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
-				} catch (Throwable e) {
-					LOG.error(e.getMessage(), e);
-				}
-			}
-		};
-		// enable debug logging (for a production application, you should set this to false).
-		IabHelper.get().enableDebugLogging(Config.isDebug());
-
-		// Start setup. This is asynchronous and the specified listener
-		// will be called once setup completes.
-		LOG.debug("Starting setup.");
-		IabHelper.get().ensureSetup(new IabHelper.OnIabSetupFinishedListener() {
-			public void onIabSetupFinished(IabResult result) {
-				LOG.debug("Setup finished. : " + result);
-				if (result.isSuccess()) {
-					IabHelper.get().launchPurchaseFlow(activity, getPremiumSku(), 1231, mPurchaseFinishedListener, "");
-				}
-			}
-		});
-	}
-
-	public static String getPremiumSku() {
-		if (Config.isDebug()) {
-			return "android.test.purchased";
-		}
-		if (ToolString.isNotBlank(customSku)) {
-			return customSku;
-		}
-		return "premium.5";
-	}
-
-	public static void setPremium(final boolean premium) {
-		LOG.debug("premium : " + premium);
-		setBooleanProperty(STR.premium, premium);
-		if (premium) {
-			BackgroundExecutor.execute(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						Appinstallendpoint.Builder endpointBuilder = new Appinstallendpoint.Builder(AndroidHttp.newCompatibleTransport(), new JacksonFactory(), new HttpRequestInitializer() {
-							public void initialize(HttpRequest httpRequest) {
-							}
-						});
-						Appinstallendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
-						try {
-							CollectionResponseAppInstall collectionResponseAppInstall = endpoint.getAppInstallsByEmails(Joiner.on(",").join(getAccountEmails())).execute();
-							if (collectionResponseAppInstall.getItems() != null) {
-								List<AppInstall> items = collectionResponseAppInstall.getItems();
-								for (AppInstall appInstall : items) {
-									appInstall.setPremium(premium);
-									endpoint.updateAppInstall(appInstall).execute();
-								}
-							}
-							// ListAppInstall listAppInstall = endpoint.listAppInstall();
-							// listAppInstall.setLimit(10);
-							// CollectionResponseAppInstall collectionResponseAppInstall = listAppInstall.execute();
-							LOG.debug("emails : " + getAccountEmails() + " : " + collectionResponseAppInstall.getItems());
-						} catch (Throwable e) {
-							LOG.warn(e.getMessage(), e);
-						}
-					} catch (Throwable e) {
-						LOG.error(e.getMessage(), e);
-					}
-				}
-			});
-		}
-	}
-
-	static String customSku;
-
-	public static void checkPremium(final FlickrUploaderActivity activity) {
-		long lastPremiumCheck = getLongProperty(STR.lastPremiumCheck);
-		LOG.debug("isPremium() : " + isPremium() + ", lastPremiumCheck : " + lastPremiumCheck);
-		if (isPremium() && System.currentTimeMillis() - lastPremiumCheck < 24 * 60 * 60 * 1000L) {// check at least everyday Premium status from server
-			activity.renderPremium();
-		} else {
-			BackgroundExecutor.execute(new Runnable() {
-				@Override
-				public void run() {
-					boolean premium = false;
-					try {
-						try {
-							Appinstallendpoint.Builder endpointBuilder = new Appinstallendpoint.Builder(AndroidHttp.newCompatibleTransport(), new JacksonFactory(), new HttpRequestInitializer() {
-								public void initialize(HttpRequest httpRequest) {
-								}
-							});
-							Appinstallendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
-							try {
-
-								CollectionResponseAppInstall collectionResponseAppInstall = endpoint.getAppInstallsByEmails(Joiner.on(",").join(getAccountEmails())).execute();
-								if (collectionResponseAppInstall.getItems() != null) {
-									List<AppInstall> items = collectionResponseAppInstall.getItems();
-									for (AppInstall appInstall : items) {
-										if (appInstall.getPremium() == Boolean.TRUE) {
-											premium = true;
-											break;
-										} else if (ToolString.isNotBlank(appInstall.getCustomSku())) {
-											customSku = appInstall.getCustomSku();
-										}
-									}
-								}
-								LOG.debug("emails : " + getAccountEmails() + " : " + collectionResponseAppInstall.getItems());
-								setLongProperty(STR.lastPremiumCheck, System.currentTimeMillis());
-								setPremium(premium);
-							} catch (Throwable e) {
-								LOG.warn(e.getMessage(), e);
-							}
-						} catch (Throwable e) {
-							LOG.error(e.getMessage(), e);
-						}
-						activity.renderPremium();
-						if (!premium) {
-							IabHelper.get().ensureSetup(new IabHelper.OnIabSetupFinishedListener() {
-								public void onIabSetupFinished(IabResult result) {
-									try {
-										LOG.debug("Setup finished: " + result);
-										if (result.isSuccess()) {
-											Inventory queryInventory = IabHelper.get().queryInventory(true, Lists.newArrayList(Utils.getPremiumSku()));
-											LOG.debug("queryInventory : " + Utils.getPremiumSku() + " : " + queryInventory.hasPurchase(Utils.getPremiumSku()));
-											for (String sku : Arrays.asList("flickruploader.donation.1", "flickruploader.donation.2", "flickruploader.donation.3", "flickruploader.donation.5",
-													"flickruploader.donation.8", "premium.5", "premium.2.5")) {
-												if (queryInventory.hasPurchase(sku)) {
-													LOG.debug("has purchased the app : " + sku);
-													Utils.setPremium(true);
-													activity.renderPremium();
-													break;
-												}
-											}
-										}
-									} catch (IabException e) {
-										LOG.error(e.getMessage(), e);
-									}
-								}
-							});
-						}
-					} catch (Throwable e) {
-						LOG.error(e.getMessage(), e);
-					}
-				}
-			});
-		}
-	}
-
-	public static boolean isPremium() {
-//		return false;
-		return getBooleanProperty(STR.premium, false);
-	}
-
-	private static long releasePremiumDate = 1373742056622L;
-
-	public static long trialUntil() {
-		try {
-			long firstInstallTime = FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime;
-			if (firstInstallTime < releasePremiumDate) {
-				return firstInstallTime + 6 * 31 * 24 * 3600 * 1000L;
-			} else {
-				return firstInstallTime + 7 * 24 * 3600 * 1000L;
-			}
-		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
-		}
-		return System.currentTimeMillis() + 7 * 24 * 3600 * 1000L;
-	}
-
-	public static long nbDaysInstalled() {
-		try {
-			long firstInstallTime = FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime;
-			return (System.currentTimeMillis() - firstInstallTime) / (24 * 60 * 60 * 1000L);
-		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
-		}
-		return 0;
-	}
-
-	public static boolean isTrial() {
-		return trialUntil() > System.currentTimeMillis();
 	}
 	
 	public static String getUploadDescription() {

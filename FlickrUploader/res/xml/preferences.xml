@@ -1,6 +1,5 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
 
-    <PreferenceScreen android:key="premium" />
     <PreferenceScreen android:key="login" />
 
     <CheckBoxPreference
@@ -39,28 +38,10 @@
         android:dialogTitle="Upload privacy"
         android:key="upload_privacy"
         android:title="Upload privacy" />
-
     <PreferenceScreen
         android:key="upload_description"
         android:title="Upload description" />
     <PreferenceScreen
         android:key="notifications"
         android:title="Notifications" />
-    <PreferenceScreen
-        android:key="rate"
-        android:summary="If you like this app, please rate it ★★★★★ on Google Play"
-        android:title="Rate the app" />
-    <PreferenceScreen
-        android:key="faq"
-        android:summary="Answers to the most frequently asked questions"
-        android:title="FAQ" />
-    <PreferenceScreen
-        android:key="feedback"
-        android:summary="Something is not right? Need some help not found in the FAQ? Ideas for improvements?"
-        android:title="Feedback / Help" />
-    <PreferenceScreen
-        android:key="pictarine"
-        android:summary="Browse your photos and friends photos from Flickr, Facebook, Instagram, Twitter, Tumblr and more"
-        android:title="Pictarine, the best photo app" />
-
 </PreferenceScreen>

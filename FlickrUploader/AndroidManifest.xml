@@ -7,7 +7,7 @@
 
     <uses-sdk
         android:minSdkVersion="14"
-        android:targetSdkVersion="18" />
+        android:targetSdkVersion="17" />
 
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -17,15 +17,6 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
-    <!-- Required permission to use Google Play Store donations -->
-    <uses-permission android:name="com.android.vending.BILLING" />
-
-    <permission
-        android:name="com.rafali.flickruploader.permission.C2D_MESSAGE"
-        android:protectionLevel="signature" />
-
-    <uses-permission android:name="com.rafali.flickruploader.permission.C2D_MESSAGE" />
-    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
 
@@ -50,24 +41,6 @@
             </intent-filter>
             <intent-filter>
                 <action android:name="com.rafali.intent.SHARE_PHOTO" />
-            </intent-filter>
-        </receiver>
-
-        <activity
-            android:name="org.donations.DonationsActivity"
-            android:excludeFromRecents="true"
-            android:label="Donations"
-            android:launchMode="singleTask"
-            android:theme="@android:style/Theme.DeviceDefault.Dialog" />
-
-        <!-- - Google Play Store donations -->
-        <service android:name="org.donations.google.BillingService" />
-
-        <receiver android:name="org.donations.google.BillingReceiver" >
-            <intent-filter>
-                <action android:name="com.android.vending.billing.IN_APP_NOTIFY" />
-                <action android:name="com.android.vending.billing.RESPONSE_CODE" />
-                <action android:name="com.android.vending.billing.PURCHASE_STATE_CHANGED" />
             </intent-filter>
         </receiver>
 
@@ -118,30 +91,6 @@
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:icon="@drawable/empty_shape"
             android:windowSoftInputMode="adjustResize" />
-
-        <service android:name=".GCMIntentService" />
-
-        <receiver
-            android:name="com.google.android.gcm.GCMBroadcastReceiver"
-            android:permission="com.google.android.c2dm.permission.SEND" >
-            <intent-filter>
-                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
-
-                <category android:name="com.rafali.flickruploader" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
-
-                <category android:name="com.rafali.flickruploader" />
-            </intent-filter>
-        </receiver>
-
-        <activity
-            android:name=".RegisterActivity"
-            android:launchMode="singleTop" />
-        <activity
-            android:name="com.google.ads.AdActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode|screenSize|smallestScreenSize" />
     </application>
 
 </manifest>

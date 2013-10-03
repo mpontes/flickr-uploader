@@ -1,15 +1,11 @@
 package com.rafali.flickruploader;
 
-import org.slf4j.LoggerFactory;
-
-import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
 import com.googlecode.androidannotations.annotations.AfterViews;
 import com.googlecode.androidannotations.annotations.EViewGroup;
 import com.googlecode.androidannotations.annotations.UiThread;
@@ -18,6 +14,8 @@ import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 import com.rafali.flickruploader.UploadService.UploadProgressListener;
 import com.rafali.flickruploader.Utils.CAN_UPLOAD;
+import org.slf4j.LoggerFactory;
+import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 
 @EViewGroup(R.layout.drawer_handle_view)
 public class DrawerHandleView extends LinearLayout implements UploadProgressListener {
@@ -112,9 +110,7 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 			if (activity != null && !activity.isPaused()) {
 				long canShow = System.currentTimeMillis() - messageUntil;
 				if (canShow > 4000) {
-					if (!Utils.isPremium() && !Utils.isTrial()) {
-						message.setText("Click on the menu and select 'Trial Info'");
-					} else if (UploadService.getNbQueued() == 0) {
+                    if (UploadService.getNbQueued() == 0) {
 						String text = "No media queued";
 						int nbUploaded = UploadService.getNbUploadedTotal();
 						if (nbUploaded > 0) {

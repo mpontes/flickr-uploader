@@ -1,8 +1,5 @@
 package com.rafali.flickruploader;
 
-import org.slf4j.LoggerFactory;
-
-import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -10,9 +7,10 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.Builder;
-
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
+import org.slf4j.LoggerFactory;
+import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 
 public class Notifications {
 
@@ -23,8 +21,6 @@ public class Notifications {
 
 	private static Builder builderUploading;
 	private static Builder builderUploaded;
-
-	static long lastNotified = 0;
 
 	private static void ensureBuilders() {
 		if (resultPendingIntent == null) {
@@ -61,7 +57,7 @@ public class Notifications {
 
 			ensureBuilders();
 
-			int realProgress = (int) (100 * (currentPosition - 1 + Double.valueOf(progress) / 100) / total);
+			int realProgress = (int) (100 * (currentPosition - 1 + (double) progress / 100) / total);
 
 			Builder builder = builderUploading;
 			builder.setProgress(100, realProgress, false);
@@ -116,36 +112,6 @@ public class Notifications {
 			notification.icon = android.R.drawable.stat_sys_upload_done;
 			// notification.iconLevel = progress / 10;
 			manager.notify(0, notification);
-		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
-		}
-
-	}
-
-	public static void notifyTrialEnded() {
-		try {
-
-			if (!Utils.isPremium() && !Utils.isTrial() && Utils.getBooleanProperty(STR.end_of_trial, true)) {
-				long lastTrialEndedNotifications = Utils.getLongProperty(STR.lastTrialEndedNotifications);
-				if (System.currentTimeMillis() - lastTrialEndedNotifications > 3 * 24 * 3600 * 1000L) {
-					ensureBuilders();
-
-					Builder builder = new NotificationCompat.Builder(FlickrUploader.getAppContext());
-					builder.setSmallIcon(R.drawable.ic_launcher);
-					builder.setContentIntent(resultPendingIntent);
-					builder.setTicker("Flickr Uploader trial ended");
-					builder.setContentTitle("Flickr Uploader trial ended");
-					builder.setAutoCancel(true);
-					builder.setContentText("Auto-upload is no longer activated");
-
-					Notification notification = builder.build();
-					notification.icon = android.R.drawable.stat_sys_upload_done;
-					// notification.iconLevel = progress / 10;
-					manager.notify(0, notification);
-
-					Utils.setLongProperty(STR.lastTrialEndedNotifications, System.currentTimeMillis());
-				}
-			}
 		} catch (Throwable e) {
 			LOG.error(e.getMessage(), e);
 		}

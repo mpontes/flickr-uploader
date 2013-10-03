@@ -1,16 +1,14 @@
 package com.rafali.flickruploader;
 
-import java.util.Arrays;
-
-import org.slf4j.LoggerFactory;
-
 import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.widget.Toast;
-
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
+import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 
 public class MyBroadcastReceiver extends BroadcastReceiver {
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(MyBroadcastReceiver.class);
@@ -19,11 +17,9 @@ public class MyBroadcastReceiver extends BroadcastReceiver {
 	public void onReceive(Context context, Intent intent) {
 		LOG.info("intent : " + intent);
 		if ("com.rafali.intent.CANCEL_UPLOAD".equals(intent.getAction())) {
-			Mixpanel.track("Cancel in notification");
 			LOG.debug( "canceling uploads");
 			UploadService.cancel(true);
 		} else if ("com.rafali.intent.SHARE_PHOTO".equals(intent.getAction())) {
-			Mixpanel.track("Share in notification");
 			LOG.debug( "share intent : " + intent);
 			int imageId = intent.getIntExtra("imageId", -1);
 			if (imageId > 0) {

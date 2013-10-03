@@ -4,40 +4,31 @@
 
 package com.googlecode.flickrjandroid.uploader;
 
+import com.googlecode.flickrjandroid.*;
+import com.googlecode.flickrjandroid.oauth.OAuthInterface;
+import com.googlecode.flickrjandroid.oauth.OAuthUtils;
+import com.googlecode.flickrjandroid.util.StringUtilities;
+import com.rafali.flickruploader.Media;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
-
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.xml.sax.SAXException;
-
-import com.googlecode.flickrjandroid.Flickr;
-import com.googlecode.flickrjandroid.FlickrException;
-import com.googlecode.flickrjandroid.Parameter;
-import com.googlecode.flickrjandroid.REST;
-import com.googlecode.flickrjandroid.Transport;
-import com.googlecode.flickrjandroid.oauth.OAuthInterface;
-import com.googlecode.flickrjandroid.oauth.OAuthUtils;
-import com.googlecode.flickrjandroid.util.StringUtilities;
-import com.rafali.flickruploader.Media;
 
 /**
  * Upload a photo.
  * <p>
  * 
- * Setting {@link com.gmail.yuyang226.flickr.uploader.UploadMetaData#setAsync(boolean)} you can switch between synchronous and asynchronous uploads.
+ * Setting {@link UploadMetaData#setAsync(boolean)} you can switch between synchronous and asynchronous uploads.
  * <p>
  * 
  * Synchronous uploads return the photoId, whilst asynchronous uploads return a ticketId.
  * <p>
- * 
- * TicketId's can be tracked with {@link com.gmail.yuyang226.flickr.photos.upload.UploadInterface#checkTickets(Set)} for completion.
- * 
+ *
  * @author Anthony Eden
  * @version $Id: Uploader.java,v 1.12 2009/12/15 20:57:49 x-mago Exp $
  */
@@ -131,9 +122,11 @@ public class Uploader {
 
 	/**
 	 * Upload a photo from an InputStream.
-	 * 
-	 * @param in
-	 * @param metaData
+	 *
+	 * @param imageName
+     * @parem file
+     * @param metaData
+     * @parem media
 	 * @return photoId for sync mode or ticketId for async mode
 	 * @throws IOException
 	 * @throws FlickrException
@@ -225,7 +218,7 @@ public class Uploader {
 	 * Upload a photo from an InputStream.
 	 * 
 	 * @param imageName
-	 * @param in
+	 * @param data
 	 * @param photoId
 	 * @return photoId for sync mode or ticketId for async mode
 	 * @throws IOException
@@ -248,7 +241,7 @@ public class Uploader {
 		if (response.isError()) {
 			throw new FlickrException(response.getErrorCode(), response.getErrorMessage());
 		}
-		String id = "";
+		String id;
 		if (async) {
 			id = response.getTicketId();
 		} else {

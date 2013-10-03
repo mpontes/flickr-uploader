@@ -15,15 +15,10 @@ public class PreferencesNotification extends PreferenceActivity implements OnSha
 		super.onCreate(savedInstanceState);
 		getActionBar().setDisplayHomeAsUpEnabled(true);
 		addPreferencesFromResource(R.xml.preferences_notification);
-		if (Utils.isPremium()) {
-			Preference end_of_trial = findPreference(STR.end_of_trial);
-			getPreferenceScreen().removePreference(end_of_trial);
-		}
 	}
 
 	@Override
 	public void onSharedPreferenceChanged(SharedPreferences sp, String key) {
-		Mixpanel.track("Preference Change", key, sp.getAll().get(key));
 	}
 
 	@Override
