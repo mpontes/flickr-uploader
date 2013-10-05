@@ -962,6 +962,6 @@ public final class Utils {
 	}
 	
 	public static String getUploadDescription() {
-		return sp.getString("upload_description", "uploaded with <a href='https://play.google.com/store/apps/details?id=com.rafali.flickruploader'>Flickr Uploader</a> for Android");
+		return sp.getString("upload_description", "");
 	}
 }
