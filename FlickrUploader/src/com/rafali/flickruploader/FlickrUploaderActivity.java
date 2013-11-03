@@ -11,7 +11,6 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.ShareCompat;
-import android.util.SparseArray;
 import android.view.*;
 import android.widget.*;
 import android.widget.AdapterView.OnItemClickListener;
@@ -143,8 +142,6 @@ public class FlickrUploaderActivity extends Activity {
 
 	}
 
-	private static final int AD_FREQ = 5;
-
 	private void load() {
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
@@ -212,25 +209,6 @@ public class FlickrUploaderActivity extends Activity {
 		return instance;
 	}
 
-	void testNotification() {
-		BackgroundExecutor.execute(new Runnable() {
-			Media image = photos.get(0);
-
-			@Override
-			public void run() {
-				for (int i = 0; i <= 100; i++) {
-					Notifications.notify(i, image, 1, 1);
-					try {
-						Thread.sleep(200);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-			}
-		});
-	}
-
 	@Override
 	protected void onDestroy() {
 		LOG.debug("onDestroy");
@@ -283,13 +261,14 @@ public class FlickrUploaderActivity extends Activity {
 	OnItemClickListener onItemClickListener = new OnItemClickListener() {
 		@Override
 		public void onItemClick(AdapterView<?> arg0, View convertView, int arg2, long arg3) {
-			FlickrApi.isUploaded(isFolderTab() ? foldersMap.get(convertView.getTag()) : convertView.getTag());
-			if (getImageSelected(SelectionType.all).contains(convertView.getTag())) {
+            Media media = (Media) convertView.getTag();
+			FlickrApi.isUploaded(isFolderTab() ? foldersMap.get(media) : media);
+			if (getImageSelected(SelectionType.all).contains(media)) {
 				convertView.findViewById(R.id.check_image).setVisibility(View.GONE);
-				getImageSelected(SelectionType.all).remove(convertView.getTag());
+				getImageSelected(SelectionType.all).remove(media);
 			} else {
 				convertView.findViewById(R.id.check_image).setVisibility(View.VISIBLE);
-				getImageSelected(SelectionType.all).add((Media) convertView.getTag());
+				getImageSelected(SelectionType.all).add(media);
 			}
 			updateCount();
 		}
@@ -320,9 +299,7 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	private MenuItem shareItem;
-	private MenuItem enableAutoUpload;
-	private MenuItem disableAutoUpload;
-	private ShareActionProvider shareActionProvider;
+    private ShareActionProvider shareActionProvider;
 
 	@UiThread(delay = 200)
 	void setShareIntent() {
@@ -369,8 +346,8 @@ public class FlickrUploaderActivity extends Activity {
 		public boolean onCreateActionMode(ActionMode mode, Menu menu) {
 			getMenuInflater().inflate(R.menu.context_menu, menu);
 			shareItem = menu.findItem(R.id.menu_item_share);
-			enableAutoUpload = menu.findItem(R.id.menu_item_enable_auto_upload);
-			disableAutoUpload = menu.findItem(R.id.menu_item_disable_auto_upload);
+            MenuItem enableAutoUpload = menu.findItem(R.id.menu_item_enable_auto_upload);
+            MenuItem disableAutoUpload = menu.findItem(R.id.menu_item_disable_auto_upload);
 			if (isFolderTab()) {
 				shareItem.setVisible(false);
 			} else {
@@ -701,7 +678,8 @@ public class FlickrUploaderActivity extends Activity {
 		int childCount = grid.getChildCount();
 		for (int i = 0; i < childCount; i++) {
 			View view = grid.getChildAt(i);
-			view.findViewById(R.id.check_image).setVisibility(getImageSelected(SelectionType.all).contains(view.getTag()) ? View.VISIBLE : View.GONE);
+            Media media = (Media) view.getTag();
+			view.findViewById(R.id.check_image).setVisibility(getImageSelected(SelectionType.all).contains(media) ? View.VISIBLE : View.GONE);
 		}
 	}
 
@@ -917,8 +895,6 @@ public class FlickrUploaderActivity extends Activity {
 			});
 		}
 	}
-
-	static SparseArray<String> uploadedPhotos = new SparseArray<String>();
 
 	private Menu menu;
 

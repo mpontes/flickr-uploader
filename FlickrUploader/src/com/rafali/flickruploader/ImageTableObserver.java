@@ -36,14 +36,12 @@ public class ImageTableObserver extends ContentObserver {
 				return;
 			}
 
-			List<Media> not_uploaded = new ArrayList<Media>();
+			List<Media> notUploaded = new ArrayList<Media>();
 			for (Media image : media.subList(0, Math.min(10, media.size()))) {
 				if (image.mediaType == MediaType.photo && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true)) {
 					LOG.debug("not uploading " + media + " because photo upload disabled");
-					continue;
 				} else if (image.mediaType == MediaType.video && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
 					LOG.debug("not uploading " + media + " because video upload disabled");
-					continue;
 				} else {
 					boolean uploaded = FlickrApi.isUploaded(image);
 					LOG.debug("uploaded : " + uploaded + ", " + image);
@@ -58,14 +56,14 @@ public class ImageTableObserver extends ContentObserver {
 								sleep++;
 								Thread.sleep(1000);
 							}
-							not_uploaded.add(image);
+							notUploaded.add(image);
 						}
 					}
 				}
 			}
-			if (!not_uploaded.isEmpty()) {
-				LOG.debug("enqueuing " + not_uploaded.size() + " media: " + not_uploaded);
-				UploadService.enqueue(true, not_uploaded, null, Utils.getInstantAlbumId(), STR.instantUpload);
+			if (!notUploaded.isEmpty()) {
+				LOG.debug("enqueuing " + notUploaded.size() + " media: " + notUploaded);
+				UploadService.enqueue(true, notUploaded, null, Utils.getInstantAlbumId(), STR.instantUpload);
 				FlickrUploaderActivity.staticRefresh(true);
 			}
 		} catch (Throwable e) {

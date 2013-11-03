@@ -190,7 +190,7 @@ public class FlickrApi {
 				int count = 0;
 				while (page <= totalPage) {
 					lastSync = System.currentTimeMillis();
-					PhotoList photos = FlickrApi.get().getPhotosetsInterface().getPhotos(photosetId, EXTRAS_MACHINE_TAGS, Flickr.PRIVACY_LEVEL_NO_FILTER, per_page, page);
+					PhotoList photos = FlickrApi.get().getPhotosetsInterface().getPhotos(photosetId, EXTRAS_MACHINE_TAGS, Flickr.PRIVACY_LEVEL_NO_FILTER, per_page, page).getPhotoList();
 					LOG.debug("nb photos uploaded : " + photos.size());
 					if (photos.isEmpty()) {
 						break;
@@ -273,7 +273,7 @@ public class FlickrApi {
 			int per_page = 100;
 			// Log.i(TAG, "persisted uploadedPhotos : " + uploadedPhotos);
 			lastSync = System.currentTimeMillis();
-			PhotoList photos = FlickrApi.get().getPhotosetsInterface().getPhotos(photosetId, EXTRAS_MACHINE_TAGS, Flickr.PRIVACY_LEVEL_NO_FILTER, per_page, 1);
+			PhotoList photos = FlickrApi.get().getPhotosetsInterface().getPhotos(photosetId, EXTRAS_MACHINE_TAGS, Flickr.PRIVACY_LEVEL_NO_FILTER, per_page, 1).getPhotoList();
 			LOG.debug("nb photos uploaded : " + photos.size());
 			for (Photo photo : photos) {
 				for (String tag : photo.getMachineTags()) {
@@ -310,25 +310,25 @@ public class FlickrApi {
 				}
 			}
 			try {
-				if (photoSetTitle != null && !photoSetTitle.equals(STR.instantUpload)) {
-					// create a new set
-				} else if (photosetId == null) {
-					Photosets list = FlickrApi.get().getPhotosetsInterface().getList(Utils.getStringProperty(STR.userId));
-					for (Photoset photoset : list.getPhotosets()) {
-						if (folder != null) {
-							if (folder.name.equals(photoset.getTitle()) && containsUploadedPhotos(photoset.getId())) {
-								photosetId = photoset.getId();
-								LOG.debug(folder.name + " : " + photosetId);
-							}
-						} else if (STR.instantUpload.equals(photoset.getTitle()) && containsUploadedPhotos(photoset.getId())) {
-							photosetId = photoset.getId();
-							LOG.debug("instantAlbumId : " + photosetId);
-							Utils.setStringProperty(STR.instantAlbumId, photosetId);
-							break;
-						}
-					}
-				}
-				if (photoId == null) {
+                if((photoSetTitle == null || photoSetTitle.equals(STR.instantUpload)) && photosetId == null) {
+                    Photosets list = FlickrApi.get().getPhotosetsInterface().getList(Utils.getStringProperty(STR.userId));
+                    for (Photoset photoset : list.getPhotosets()) {
+                        if (folder != null) {
+                            if (folder.name.equals(photoset.getTitle()) && containsUploadedPhotos(photoset.getId())) {
+                                photosetId = photoset.getId();
+                                LOG.debug(folder.name + " : " + photosetId);
+                            }
+                        } else if (STR.instantUpload.equals(photoset.getTitle()) && containsUploadedPhotos(photoset.getId())) {
+                            photosetId = photoset.getId();
+                            LOG.debug("instantAlbumId : " + photosetId);
+                            Utils.setStringProperty(STR.instantAlbumId, photosetId);
+                            break;
+                        }
+                    }
+                }
+                // create a new set otherwise
+
+                if (photoId == null) {
 					String extension = getExtension(image);
 					if (unsupportedExtensions.contains(extension)) {
 						throw new UploadException("Unsupported extension: " + extension);
@@ -369,7 +369,8 @@ public class FlickrApi {
 						metaData.setPublicFlag(privacy == PRIVACY.PUBLIC);
 						metaData.setTags(Arrays.asList(md5tag, sha1tag));
 						long start = System.currentTimeMillis();
-						photoId = FlickrApi.get().getUploader().upload(image.name, file, metaData, image);
+                        FUProgressCallback callback = new FUProgressCallback(image);
+						photoId = FlickrApi.get().getUploader().upload(image.name, file, metaData, callback);
 						LOG.debug("photo uploaded in " + (System.currentTimeMillis() - start) + "ms : " + photoId);
 						uploadedPhotos.put(sha1tag, photoId);
 						photosPrivacy.put(photoId, privacy);
@@ -533,13 +534,13 @@ public class FlickrApi {
 	public static String encode(long num) {
 		String result = "";
 		long div;
-		int mod = 0;
+		int mod;
 
 		while (num >= base_count) {
 			div = num / base_count;
-			mod = (int) (num - (base_count * (long) div));
+			mod = (int) (num - (base_count * div));
 			result = alphabet[mod] + result;
-			num = (long) div;
+			num = div;
 		}
 		if (num > 0) {
 			result = alphabet[(int) num] + result;

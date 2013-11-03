@@ -95,17 +95,15 @@ public class UploadService extends Service {
 				BackgroundExecutor.execute(new Runnable() {
 					@Override
 					public void run() {
-						Iterator<Entry<Integer, Integer>> it = persistedFailedCount.entrySet().iterator();
-						while (it.hasNext()) {
-							Map.Entry<Integer, Integer> entry = it.next();
-							Integer imageId = entry.getKey();
-							Media image = Utils.getImage(imageId);
-							if (image != null && new File(image.path).exists()) {
-								Integer nbErrors = entry.getValue();
-								failedCount.put(imageId, nbErrors);
-								retryDelay.put(image, System.currentTimeMillis() + nbErrors * 60 * 1000L);
-							}
-						}
+                        for(Entry<Integer, Integer> entry : persistedFailedCount.entrySet()) {
+                            Integer imageId = entry.getKey();
+                            Media image = Utils.getImage(imageId);
+                            if(image != null && new File(image.path).exists()) {
+                                Integer nbErrors = entry.getValue();
+                                failedCount.put(imageId, nbErrors);
+                                retryDelay.put(image, System.currentTimeMillis() + nbErrors * 60 * 1000L);
+                            }
+                        }
 						if (!retryDelay.isEmpty()) {
 							for (UploadProgressListener uploadProgressListener : uploadProgressListeners) {
 								uploadProgressListener.onPaused();
@@ -438,12 +436,6 @@ public class UploadService extends Service {
 
 	public static int getTotal() {
 		return queue.size() + uploaded.size();
-	}
-
-	public static boolean isCurrentlyUploading(Media media) {
-		if (media.equals(mediaCurrentlyUploading))
-			return true;
-		return false;
 	}
 
 	public static List<Media> getQueueSnapshot() {

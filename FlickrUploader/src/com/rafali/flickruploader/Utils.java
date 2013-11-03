@@ -5,9 +5,7 @@ import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.*;
-import android.content.DialogInterface.OnClickListener;
 import android.content.SharedPreferences.Editor;
-import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -26,13 +24,14 @@ import android.view.WindowManager;
 import com.google.common.base.Joiner;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
-import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 import org.slf4j.LoggerFactory;
 import uk.co.senab.bitmapcache.BitmapLruCache;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.Map.Entry;
@@ -213,20 +212,18 @@ public final class Utils {
 		editor.commit();
 	}
 
-	public static void setImages(String key, Collection<Media> images) {
+	public synchronized static void setImages(String key, Collection<Media> images) {
 		try {
 			String serialized;
-			synchronized (images) {
-				if (images == null || images.isEmpty()) {
-					serialized = null;
-				} else {
-					List<Integer> ids = new ArrayList<Integer>();
-					for (Media image : images) {
-						ids.add(image.id);
-					}
-					serialized = Joiner.on(",").join(ids);
-				}
-			}
+            if (images == null || images.isEmpty()) {
+                serialized = null;
+            } else {
+                List<Integer> ids = new ArrayList<Integer>();
+                for (Media image : images) {
+                    ids.add(image.id);
+                }
+                serialized = Joiner.on(",").join(ids);
+            }
 			LOG.debug("persisting images " + key + " : " + serialized);
 			setStringProperty(key, serialized);
 		} catch (Throwable e) {
@@ -355,9 +352,8 @@ public final class Utils {
 	private static String SHA1(String text) {
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-1");
-			byte[] sha1hash = new byte[40];
 			md.update(text.getBytes("utf-8"), 0, text.length());
-			sha1hash = md.digest();
+            byte[] sha1hash = md.digest();
 			return Utils.convertToHex(sha1hash);
 		} catch (Exception e) {
 			LOG.warn("Error while hashing", e);
@@ -366,18 +362,18 @@ public final class Utils {
 	}
 
 	static String convertToHex(byte[] data) {
-		StringBuffer buf = new StringBuffer();
-		for (int i = 0; i < data.length; i++) {
-			int halfbyte = (data[i] >>> 4) & 0x0F;
-			int two_halfs = 0;
-			do {
-				if ((0 <= halfbyte) && (halfbyte <= 9))
-					buf.append((char) ('0' + halfbyte));
-				else
-					buf.append((char) ('A' + (halfbyte - 10)));
-				halfbyte = data[i] & 0x0F;
-			} while (two_halfs++ < 1);
-		}
+		StringBuilder buf = new StringBuilder();
+        for(byte aData : data) {
+            int halfbyte = (aData >>> 4) & 0x0F;
+            int two_halfs = 0;
+            do {
+                if((0 <= halfbyte) && (halfbyte <= 9))
+                    buf.append((char) ('0' + halfbyte));
+                else
+                    buf.append((char) ('A' + (halfbyte - 10)));
+                halfbyte = aData & 0x0F;
+            } while(two_halfs++ < 1);
+        }
 		return buf.toString();
 	}
 
@@ -406,7 +402,7 @@ public final class Utils {
 
 	static final Map<String, String> md5Sums = new HashMap<String, String>();
 
-	public static final String getMD5Checksum(Media image) {
+	public static String getMD5Checksum(Media image) {
 		String filename = image.path;
 		String md5sum = md5Sums.get(filename);
 		if (md5sum == null) {
@@ -422,9 +418,9 @@ public final class Utils {
 		byte[] b = createChecksum(filename);
 		String result = "";
 
-		for (int i = 0; i < b.length; i++) {
-			result += Integer.toString((b[i] & 0xff) + 0x100, 16).substring(1);
-		}
+        for(byte aB : b) {
+            result += Integer.toString((aB & 0xff) + 0x100, 16).substring(1);
+        }
 		return result;
 	}
 
@@ -498,7 +494,7 @@ public final class Utils {
 			cursor.moveToFirst();
 			LOG.debug("filter = " + filter + ", count = " + cursor.getCount());
 			int nbErrorConsecutive = 0;
-			while (cursor.isAfterLast() == false) {
+			while (!cursor.isAfterLast()) {
 				try {
 					Long date = null;
 					String dateStr = null;
@@ -858,109 +854,6 @@ public final class Utils {
 		return charging;
 	}
 
-	private static boolean copyToFile(InputStream inputStream, File destFile) {
-		try {
-			OutputStream out = new FileOutputStream(destFile);
-			try {
-				byte[] buffer = new byte[4096];
-				int bytesRead;
-				while ((bytesRead = inputStream.read(buffer)) >= 0) {
-					out.write(buffer, 0, bytesRead);
-				}
-			} finally {
-				out.close();
-			}
-			return true;
-		} catch (IOException e) {
-			return false;
-		}
-	}
-
-	// copy a file from srcFile to destFile, return true if succeed, return
-	// false if fail
-	public static boolean copyFile(File srcFile, File destFile) {
-		boolean result = false;
-		try {
-			InputStream in = new FileInputStream(srcFile);
-			try {
-				result = copyToFile(in, destFile);
-			} finally {
-				in.close();
-			}
-		} catch (IOException e) {
-			result = false;
-		}
-		return result;
-	}
-
-	static boolean showingEmailActivity = false;
-
-	public static void showEmailActivity(final Activity activity, final String subject, final String message, final boolean attachLogs) {
-		if (!showingEmailActivity) {
-			showingEmailActivity = true;
-			BackgroundExecutor.execute(new Runnable() {
-
-				@Override
-				public void run() {
-					try {
-						Intent intent = new Intent(Intent.ACTION_SEND);
-						intent.setType("text/email");
-						intent.putExtra(Intent.EXTRA_EMAIL, new String[] { "flickruploader@rafali.com" });
-						intent.putExtra(Intent.EXTRA_SUBJECT, subject);
-						intent.putExtra(Intent.EXTRA_TEXT, message);
-
-						if (attachLogs) {
-							File log = new File(FlickrUploader.getLogFilePath());
-							if (log.exists()) {
-								File publicDownloadDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-								File publicLog = new File(publicDownloadDirectory, "flickruploader_log.txt");
-								Utils.copyFile(log, publicLog);
-								try {
-									BufferedWriter bW = new BufferedWriter(new FileWriter(publicLog, true));
-									bW.newLine();
-									bW.write("app version : " + Config.FULL_VERSION_NAME);
-									bW.newLine();
-									bW.write("device id : " + getDeviceId());
-									bW.newLine();
-									bW.write("date install : " + FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime);
-									bW.newLine();
-									bW.flush();
-									bW.close();
-								} catch (Throwable e) {
-									LOG.error(e.getMessage(), e);
-								}
-								Uri uri = Uri.fromFile(publicLog);
-								intent.putExtra(Intent.EXTRA_STREAM, uri);
-							} else {
-								LOG.warn(log + " does not exist");
-							}
-						}
-						final List<ResolveInfo> resInfoList = activity.getPackageManager().queryIntentActivities(intent, 0);
-
-						ResolveInfo gmailResolveInfo = null;
-						for (ResolveInfo resolveInfo : resInfoList) {
-							if ("com.google.android.gm".equals(resolveInfo.activityInfo.packageName)) {
-								gmailResolveInfo = resolveInfo;
-								break;
-							}
-						}
-
-						if (gmailResolveInfo != null) {
-							intent.setClassName(gmailResolveInfo.activityInfo.packageName, gmailResolveInfo.activityInfo.name);
-							activity.startActivity(intent);
-						} else {
-							activity.startActivity(Intent.createChooser(intent, "Send Feedback:"));
-						}
-					} catch (Throwable e) {
-						LOG.error(e.getMessage(), e);
-					} finally {
-						showingEmailActivity = false;
-					}
-				}
-			});
-		}
-	}
-	
 	public static String getUploadDescription() {
 		return sp.getString("upload_description", "");
 	}

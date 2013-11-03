@@ -1,14 +1,12 @@
 package com.rafali.flickruploader;
 
-import org.slf4j.LoggerFactory;
-
 import android.content.pm.ApplicationInfo;
+import org.slf4j.LoggerFactory;
 
 public class Config {
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(Config.class);
 
 	public static final int VERSION = getVersion();
-	public static final long MAX_FILE_SIZE = 200 * 1024 * 1024L;
 	public static final String VERSION_NAME = getVersionName();
 	public static final String FULL_VERSION_NAME = VERSION_NAME + "-" + VERSION;
 

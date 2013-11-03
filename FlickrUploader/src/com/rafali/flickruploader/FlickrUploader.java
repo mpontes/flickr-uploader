@@ -8,7 +8,6 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.android.LogcatAppender;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
@@ -129,19 +128,6 @@ public class FlickrUploader extends Application {
 
 		rootLogger.addAppender(fileAppender);
 
-	}
-
-	public static void flushLogs() {
-		try {
-			Logger logbackLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-			LoggerContext lc = logbackLogger.getLoggerContext();
-			Logger rootLogger = lc.getLogger(Logger.ROOT_LOGGER_NAME);
-			Appender<ILoggingEvent> appender = rootLogger.getAppender("file");
-			appender.stop();
-			appender.start();
-		} catch (Throwable e) {
-			Log.e("Pictarine", e.getMessage(), e);
-		}
 	}
 
 	public static void cleanLogs() {

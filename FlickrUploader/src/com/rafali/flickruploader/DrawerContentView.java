@@ -1,15 +1,5 @@
 package com.rafali.flickruploader;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import org.slf4j.LoggerFactory;
-
-import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
-import uk.co.senab.bitmapcache.CacheableImageView;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -18,20 +8,20 @@ import android.graphics.Bitmap;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
-import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
-
-import com.googlecode.androidannotations.annotations.AfterViews;
-import com.googlecode.androidannotations.annotations.Click;
-import com.googlecode.androidannotations.annotations.EViewGroup;
-import com.googlecode.androidannotations.annotations.UiThread;
-import com.googlecode.androidannotations.annotations.ViewById;
+import android.widget.*;
+import com.googlecode.androidannotations.annotations.*;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 import com.rafali.flickruploader.UploadService.UploadProgressListener;
+import org.slf4j.LoggerFactory;
+import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
+import uk.co.senab.bitmapcache.CacheableImageView;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @EViewGroup(R.layout.drawer_content)
 public class DrawerContentView extends RelativeLayout implements UploadProgressListener {
@@ -151,12 +141,6 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 		render();
 		updateLists();
 		checkStatus();
-	}
-
-	View createEmptyView(String text) {
-		TextView tv = (TextView) View.inflate(getContext(), R.layout.no_data, null);
-		tv.setText(text);
-		return tv;
 	}
 
 	public void updateLists() {

@@ -1,6 +1,5 @@
 package com.rafali.flickruploader;
 
-import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -10,7 +9,6 @@ public class ToolString {
 
 	public static final String REGEX_EMAIL_INSIDE = "[a-zA-Z0-9][\\w\\.-]*[a-zA-Z0-9]@[a-zA-Z0-9][\\w\\.-]*[a-zA-Z0-9]\\.[a-zA-Z][a-zA-Z\\.]*[a-zA-Z]";
 	public static final String REGEX_EMAIL = "^" + REGEX_EMAIL_INSIDE + "$";
-	// public static final String REGEX_PWD = "^[a-zA-Z0-9]([a-zA-Z0-9@#$%^&+=]{5,20})";
 	public static final String REGEX_PWD = "^\\S{6,}";
 	public static final String REGEX_URL = "(https?:\\/\\/)?([\\da-z\\.-]+)\\.([a-z\\.]{2,6})([\\/\\w\\.-]*)*\\/?";
 
@@ -37,54 +35,47 @@ public class ToolString {
 	}
 
 	public static boolean isBlank(String str) {
-		if (str == null)
-			return true;
-		return str.trim().length() == 0;
-	}
+        return str == null || str.trim().length() == 0;
+    }
 
 	public static boolean isBlank(CharSequence str) {
-		if (str == null)
-			return true;
-		return str.length() == 0;
-	}
+        return str == null || str.length() == 0;
+    }
 
 	// return true if oldStr = " " and newStr = null
 	public static boolean areEqual(String oldStr, String newStr) {
 		if (isNotBlank(oldStr)) {
 			return oldStr.equals(newStr);
 		} else {
-			if (isBlank(newStr))
-				return true;
-			else
-				return false;
+            return isBlank(newStr);
 		}
 	}
 
 	public static String formatDuration(long duration) {
-		StringBuffer strb = new StringBuffer();
+		StringBuilder strb = new StringBuilder();
 		long diffInSeconds = duration / 1000L;
-		long sec, min, hours, days = 0;
+		long sec, min, hours, days;
 		sec = (diffInSeconds >= 60 ? diffInSeconds % 60 : diffInSeconds);
 		min = (diffInSeconds = (diffInSeconds / 60)) >= 60 ? diffInSeconds % 60 : diffInSeconds;
 		hours = (diffInSeconds = (diffInSeconds / 60)) >= 24 ? diffInSeconds % 24 : diffInSeconds;
-		days = (diffInSeconds = (diffInSeconds / 24));
+		days = diffInSeconds / 24;
 		if (days > 0) {
-			strb.append(days + "d");
+			strb.append(days).append("d");
 			if (hours > 0) {
-				strb.append(" " + hours + "h");
+				strb.append(" ").append(hours).append("h");
 			}
 		} else if (hours > 0) {
-			strb.append(hours + "h");
+			strb.append(hours).append("h");
 			if (min > 0) {
-				strb.append(" " + min + "m");
+				strb.append(" ").append(min).append("m");
 			}
 		} else if (min > 0) {
-			strb.append(min + "m");
+			strb.append(min).append("m");
 			if (sec > 0) {
-				strb.append(" " + sec + "s");
+				strb.append(" ").append(sec).append("s");
 			}
 		} else {
-			strb.append(sec + "s");
+			strb.append(sec).append("s");
 		}
 		return strb.toString();
 	}
@@ -126,7 +117,7 @@ public class ToolString {
 	}
 
 	public static String truncate(String str, int maxLength) {
-		return new String(str.substring(0, Math.min(str.length(), maxLength)));
+		return str.substring(0, Math.min(str.length(), maxLength));
 	}
 
 	public static String substringTo(String str, char character) {
@@ -169,12 +160,5 @@ public class ToolString {
 			}
 		}
 		return map;
-	}
-	
-	public static String readableFileSize(long size) {
-	    if(size <= 0) return "0";
-	    final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
-	    int digitGroups = (int) (Math.log10(size)/Math.log10(1024));
-	    return new DecimalFormat("#,##0.#").format(size/Math.pow(1024, digitGroups)) + " " + units[digitGroups];
 	}
 }
